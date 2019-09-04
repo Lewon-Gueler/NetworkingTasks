@@ -2,11 +2,11 @@ package com.example.networking
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.widget.TextView
 import com.google.gson.Gson
 import kotlinx.android.synthetic.main.activity_main.*
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
+import org.json.JSONArray
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -33,42 +33,107 @@ class MainActivity : AppCompatActivity() {
         val etSend = editTextSend
         val tvDelete = textViewDelete
 
-        var retrofit = Retrofit.Builder()
+        val retrofit = Retrofit.Builder()
             .baseUrl("http://httpbin.org")
             .addConverterFactory(GsonConverterFactory.create())
             .client(httpClient.build())
             .build()
 
         // Jason to Kotlin
-        val gson = Gson()
-        val json: String = """{"id":1,"url":"login"}"""
-        val testModel = gson.fromJson(json, Datas::class.java)
-        tvGet.text = "$testModel"
+      // val gson = Gson()
+      //  val json: String = """{"id":1,"url":"login"}"""
+      //  val testModel = gson.fromJson(json, Datas::class.java)
+      //  tvGet.text = "$testModel"
 
-        //Kotlin to Jason
-        val jsonString = gson.toJson(Datas(1,"Test"))
-        tvDelete.text = jsonString
+//        //Kotlin to Jason
 
-        //val service = retrofit.create(JasonPlaceHolder::class.java)
-        //val call = service.getPosts()
+
+        val service = retrofit.create(Api::class.java)
 
         btnGet.setOnClickListener {
-            /* service.sendPosts(Datas(1, "String2")).enqueue(object : Callback<Api> {
-                 override fun onResponse(call: Call<Api>?, response: Response<Datas>?) {
-                     if (response?.isSuccessful() == false) {
-                         textView2.text = "Code ${response.code()}"
-                         return
-                     }
-                     val stringBuilder = response?.let {
-                         it.body().
-                         it.body().origin + "" + "  " + it.body().url
-                     }
-                     textView2.text = stringBuilder
-                 }
-                 override fun onFailure(call: Call<Datas>?, t: Throwable?) {
-                     textView2.text = t?.message
-                 }
-             }) */
+            service.getData().enqueue(object : Callback<Datas> {
+
+                override fun onResponse(call: Call<Datas>, response: Response<Datas>) {
+                    if (!response.isSuccessful) {
+                        tvGet.text = "Code ${response.code()}"
+                        return
+                    }
+                    val stringBuilder = response.let {
+                        it.body()?.url
+
+                    }
+                    tvGet.text = stringBuilder
+                }
+
+                override fun onFailure(call: Call<Datas>, t: Throwable) {
+                    tvGet.text = t.message
+
+                }
+            })
+        }
+
+        btnSend.setOnClickListener {
+            val userInput  = "${etSend.text}"
+            val gson = Gson()
+            val convertM = gson.fromJson(userInput, Datas::class.java)
+
+                service.sendData(convertM).enqueue(object : Callback<Datas> {
+                    override fun onResponse(call: Call<Datas>, response: Response<Datas>) {
+                        val stringBuilder2 = response.let {
+                            it.body()?.userInput
+                        }
+                        tvDelete.text = stringBuilder2
+                    }
+
+                    override fun onFailure(call: Call<Datas>, t: Throwable) {
+                        tvDelete.text = t.message
+                    }
+
+                })
+        }
+
+        btnDelete.setOnClickListener {
+            service.deleteData().enqueue(object : Callback<Datas> {
+
+                override fun onResponse(call: Call<Datas>, response: Response<Datas>) {
+                    if (!response.isSuccessful) {
+                        return
+                    }
+                    val stringBuilder = response.let {
+                        it.body()?.url
+                    }
+
+                }
+                override fun onFailure(call: Call<Datas>, t: Throwable) {
+
+                }
+            })
         }
     }
 }
+
+/*Parsing stuff
+Parse String into a Json Array loop over the Array to create for each element one Kotlin Object
+private fun parseRepos(jsonString: String) : List<Repo> {
+    val repos = mutableListOf<Repo>()
+    val reposArray = JSONArray(jsonString)
+    for (i in 0 until reposArray.length()) {
+        val repoObject = reposArray.getJSONObject(i)
+        val repo = Repo(repoObject.getString("name"))
+        repos.add(repo)
+    }
+    return repos
+}
+//Parse Gist Data into a JSON Array
+private fun parseGits(jsonString: String) : List<Repo> {
+    val gist = mutableListOf<Repo>()
+    val reposArray = JSONArray(jsonString)
+    for (i in 0 until reposArray.length()) {
+        val gistObject = reposArray.getJSONObject(i)
+        val createdAt = gistObject.getString("created_at")
+        val description = gistObject.getString("created_at")
+        val gist = Gist(createdAt, description)
+        gist.add(gist)
+    }
+    return gist
+*/

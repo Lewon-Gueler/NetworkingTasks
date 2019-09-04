@@ -3,10 +3,11 @@ package com.example.networking
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import com.google.gson.Gson
+import com.google.gson.JsonElement
+import com.google.gson.JsonObject
 import kotlinx.android.synthetic.main.activity_main.*
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
-import org.json.JSONArray
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -34,7 +35,7 @@ class MainActivity : AppCompatActivity() {
         val tvDelete = textViewDelete
 
         val retrofit = Retrofit.Builder()
-            .baseUrl("http://httpbin.org")
+            .baseUrl("https://httpbin.org")
             .addConverterFactory(GsonConverterFactory.create())
             .client(httpClient.build())
             .build()
@@ -60,7 +61,6 @@ class MainActivity : AppCompatActivity() {
                     }
                     val stringBuilder = response.let {
                         it.body()?.url
-
                     }
                     tvGet.text = stringBuilder
                 }
@@ -73,19 +73,25 @@ class MainActivity : AppCompatActivity() {
         }
 
         btnSend.setOnClickListener {
-            val userInput  = "${etSend.text}"
-            val gson = Gson()
-            val convertM = gson.fromJson(userInput, Datas::class.java)
+            val userInput  = etSend.text.toString()
+            val jsonObject =  JsonObject() //creating new JsonObject
+            jsonObject.addProperty("userInput", userInput)
 
-                service.sendData(convertM).enqueue(object : Callback<Datas> {
-                    override fun onResponse(call: Call<Datas>, response: Response<Datas>) {
-                        val stringBuilder2 = response.let {
-                            it.body()?.userInput
+
+
+                service.sendData(jsonObject).enqueue(object : Callback<JsonObject> {
+                    override fun onResponse(call: Call<JsonObject>, response: Response<JsonObject>) {
+                       /* response.let {
+                              it.body()?.userInput
                         }
-                        tvDelete.text = stringBuilder2
+                        tvDelete.text = convertM */
+
+                        //val gson = Gson()
+                        //val convertM = gson.fromJson(response.body(), Datas::class.java) //konvertierung
+                        tvDelete.text = response.body()?.toString()
                     }
 
-                    override fun onFailure(call: Call<Datas>, t: Throwable) {
+                    override fun onFailure(call: Call<JsonObject>, t: Throwable) {
                         tvDelete.text = t.message
                     }
 
@@ -93,19 +99,18 @@ class MainActivity : AppCompatActivity() {
         }
 
         btnDelete.setOnClickListener {
-            service.deleteData().enqueue(object : Callback<Datas> {
+            service.deleteData().enqueue(object : Callback<String> {
 
-                override fun onResponse(call: Call<Datas>, response: Response<Datas>) {
-                    if (!response.isSuccessful) {
+                override fun onResponse(call: Call<String>, response: Response<String>) {
+                    if (response.isSuccessful) {
                         return
                     }
-                    val stringBuilder = response.let {
-                        it.body()?.url
+                    response.let {
+                        tvDelete.text = it.body()
                     }
-
                 }
-                override fun onFailure(call: Call<Datas>, t: Throwable) {
-
+                override fun onFailure(call: Call<String>, t: Throwable) {
+                    tvDelete.text = t.message
                 }
             })
         }
@@ -116,7 +121,7 @@ class MainActivity : AppCompatActivity() {
 Parse String into a Json Array loop over the Array to create for each element one Kotlin Object
 private fun parseRepos(jsonString: String) : List<Repo> {
     val repos = mutableListOf<Repo>()
-    val reposArray = JSONArray(jsonString)
+    val reposArray = JsonArray(jsonString)
     for (i in 0 until reposArray.length()) {
         val repoObject = reposArray.getJSONObject(i)
         val repo = Repo(repoObject.getString("name"))

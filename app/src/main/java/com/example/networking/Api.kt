@@ -1,6 +1,7 @@
 package com.example.networking
 
 
+import com.google.gson.JsonObject
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
@@ -12,9 +13,8 @@ interface Api {
     fun getData(): retrofit2.Call<Datas>
 
     @POST ("post")
-    fun sendData(@Body body: Datas ): retrofit2.Call<Datas>
+    fun sendData(@Body body: JsonObject): retrofit2.Call<JsonObject>
 
     @DELETE ("delete")
-    fun deleteData(): retrofit2.Call<Datas>
-
+    fun deleteData(): retrofit2.Call<String>
 }
